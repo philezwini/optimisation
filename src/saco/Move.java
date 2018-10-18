@@ -1,5 +1,5 @@
 package saco;
 
 public enum Move {
-	UP, DON, LEFT, RIGHT
+	UP, DOWN, LEFT, RIGHT //Changed DON to DOWN using GitHub's editor (online).
 }
