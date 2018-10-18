@@ -88,6 +88,7 @@ public class SACOHelper {
 		}
 	}
 
+	//-- This method implements the SACO algorithm as in the textbook. --//
 	public void run() {
 		while (t < MAX_TIME_ELAPSED) {
 			for(Ant a : ants) {
