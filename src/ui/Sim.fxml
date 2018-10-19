@@ -15,24 +15,26 @@
    <top>
       <HBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="50.0" prefWidth="600.0" spacing="10.0" BorderPane.alignment="CENTER">
          <children>
-            <Label text="No. iterations:" />
+            <Label text="Turns:" />
             <TextField fx:id="txtIterations" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="25.0" prefWidth="50.0" />
-            <Label layoutX="10.0" layoutY="10.0" text="No. red ants:" />
+            <Label layoutX="10.0" layoutY="10.0" text="R:" />
             <TextField fx:id="txtRed" layoutX="123.0" layoutY="10.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="25.0" prefWidth="50.0" />
-            <Label layoutX="233.0" layoutY="10.0" text="No. green ants:" />
+            <Label layoutX="233.0" layoutY="10.0" text="G:" />
             <TextField fx:id="txtGreen" layoutX="301.0" layoutY="10.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="25.0" prefWidth="50.0" />
-            <Label layoutX="402.0" layoutY="10.0" text="No. blue ants:" />
+            <Label layoutX="402.0" layoutY="10.0" text="B" />
             <TextField fx:id="txtBlue" layoutX="472.0" layoutY="10.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="25.0" prefWidth="50.0" />
+            <Label layoutX="408.0" layoutY="27.0" text="t:" />
+            <TextField fx:id="txtElapsed" layoutX="425.0" layoutY="23.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="25.0" prefWidth="50.0" />
          </children>
       </HBox>
    </top>
    <bottom>
-      <HBox alignment="BOTTOM_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="40.0" prefWidth="500.0" BorderPane.alignment="CENTER">
+      <HBox alignment="BOTTOM_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="50.0" prefWidth="600.0" BorderPane.alignment="CENTER">
          <children>
             <ButtonBar maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="40.0" prefWidth="200.0">
               <buttons>
                 <Button mnemonicParsing="false" onAction="#btnStartClick" text="Start" />
-                  <Button layoutX="135.0" layoutY="48.0" mnemonicParsing="false" text="Stop" />
+                  <Button layoutX="135.0" layoutY="48.0" mnemonicParsing="false" onAction="#btnSopClick" text="Stop" />
                   <Button layoutX="135.0" layoutY="48.0" mnemonicParsing="false" text="Reset" />
               </buttons>
             </ButtonBar>

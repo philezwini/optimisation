@@ -7,15 +7,19 @@ public class Ant {
 	private boolean carryingFood;
 	private Location nest;
 	private Location location;
-	private Stack<Move> path;
+	private Stack<Location> path;
+	private Stack<Move> route;
 	
 	public Ant(Colony colony, Location nest) {
 		super();
 		this.colony = colony;
 		this.nest = nest;
-		setPath(new Stack<>());
+		location = this.nest;
 		
 		carryingFood = false;
+		
+		setPath(new Stack<>());
+		setRoute(new Stack<>());
 	}
 
 	public Colony getColony() {
@@ -42,11 +46,11 @@ public class Ant {
 		this.nest = nest;
 	}
 
-	public Stack<Move> getPath() {
+	public Stack<Location> getPath() {
 		return path;
 	}
 
-	public void setPath(Stack<Move> path) {
+	public void setPath(Stack<Location> path) {
 		this.path = path;
 	}
 
@@ -56,5 +60,13 @@ public class Ant {
 
 	public void setLocation(Location location) {
 		this.location = location;
+	}
+
+	public Stack<Move> getRoute() {
+		return route;
+	}
+
+	public void setRoute(Stack<Move> route) {
+		this.route = route;
 	}
 }

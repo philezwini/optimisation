@@ -1,117 +1,134 @@
 package ui;
 
 import java.net.URL;
-import java.util.Optional;
 import java.util.Random;
 import java.util.ResourceBundle;
+import java.util.Timer;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import saco.Coordinate;
 import saco.Location;
 import saco.SACOHelper;
 
 public class SimController extends Controller {
-	private Location[][] world;
+	private static Location[][] world;
 	private int width, height;
-	
-	@FXML private AnchorPane rootPane;
-	
-	@FXML private TextField txtIterations, txtRed, txtGreen, txtBlue;
+	private Timer timer;
+	SACOHelper saco;
+
+	@FXML
+	private AnchorPane rootPane;
+
+	@FXML
+	private TextField txtIterations, txtRed, txtGreen, txtBlue, txtElapsed;
+	private static TextField s_txtElapsed;
 
 	@Override
 	public void initialize(URL arg0, ResourceBundle arg1) {
-		//Get the user's preferred size of the world.
+		// Get the user's preferred size of the world.
 		width = 500;
 		height = 500;
-		
-		if(width == -1 || height == -1) {
-			//Make sure that both the width and height were successfully obtained from the user.
-			try {
-				throw new Exception("Invalid dimensions for game world.");
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		
-		initWorld();//Initialize the world.
+
+		s_txtElapsed = txtElapsed;
+		s_txtElapsed.setText("0");
+		initWorld();// Initialize the world.
 	}
-	
-	@FXML private void btnStartClick(){
-		drawWorld();
-		
+
+	@FXML
+	private void btnStartClick() {
 		int t = Integer.parseInt(txtIterations.getText());
 		int r = Integer.parseInt(txtRed.getText());
 		int g = Integer.parseInt(txtGreen.getText());
 		int b = Integer.parseInt(txtBlue.getText());
-		
-		SACOHelper saco = new SACOHelper(world, false, t, r, g, b);
+
+		saco = new SACOHelper(world, true, t, r, g, b);
+		timer = new Timer();
+		timer.scheduleAtFixedRate(saco, 0, 1);
 	}
 
-	//-- Draws the world on the AnchorPane. --//
+	@FXML
+	private void btnSopClick() {
+		saco.cancel();
+	}
+
+	// -- Draws the world on the AnchorPane. --//
 	private void drawWorld() {
-		for(int i = 0; i < width; i++) {
-			for(int j = 0; j < height; j++) {
-				int r = world[i][j].getFoodContents().getR();
-				int g = world[i][j].getFoodContents().getG();
-				int b = world[i][j].getFoodContents().getB();
-				
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < height; j++) {
+				Color col = world[i][j].getFoodContents();
 				Circle c = new Circle(1);
 				c.setTranslateX(i);
 				c.setTranslateY(j);
-				c.setFill(Color.rgb(r, g, b));
-				
+				c.setFill(col);
+
+				world[i][j].setVisual(c);
 				rootPane.getChildren().add(c);
 			}
 		}
 	}
-	
-	// -- Initialized the world. Obtain width and height from user before calling. --//
-	private void initWorld() {
-		//Width or height cannot be zero.
-		if (width == 0 || height == 0) {
-			makeCustomAlert("Please enter appropriate dimensions for the world.");
-			return;
-		}
 
+	// -- Initialized the world. Obtain width and height from user before calling.
+	// --//
+	private void initWorld() {
 		world = new Location[width][height];
 
 		// Initialize each pixel with random numbers.
 		for (int i = 0; i < width; i++) {
 			for (int j = 0; j < height; j++) {
-				//Give the pixel a value between 0 and 255.
-				Coordinate c = new Coordinate(randPixelValue(), randPixelValue(), randPixelValue());
-				world[i][j] = new Location(c);
+				world[i][j] = new Location(randColor(), i, j);
 			}
 		}
+		drawWorld();
 	}
-	
-	//-- Returns a random value between 0 and 255 both inclusive. --//
-	private int randPixelValue() {
-		return new Random().nextInt(256);
+
+	// -- Returns a random value between 0 and 255 both inclusive. --//
+	private Color randColor() {
+		int rand = new Random().nextInt(4);
+		if (rand == 0)
+			return Color.RED;
+		if (rand == 1)
+			return Color.GREEN;
+		if (rand == 2)
+			return Color.BLUE;
+		if(rand == 3)
+			return Color.WHITE;
+
+		return null;
 	}
-	
+
 	@FXML
 	void btnClickClick(MouseEvent e) {
 		System.out.println("x = " + e.getSceneX() + ", y = " + e.getSceneY());
 	}
 
-	/*//--This function gets an integer value from the user. --//
-	private int getDimension(String name) {
-		TextInputDialog in = new TextInputDialog();
-		in.setTitle(name);
-		in.setHeaderText(name + " of world required.");
-		in.setContentText("Enter the " + name + " of the plane:");
-		Optional<String> dim = in.showAndWait();
-		
-		if(dim.isPresent())
-			return Integer.parseInt(dim.get());
-		
-		return -1;
-	}*/
+	/*
+	 * This method updates the world so that it reflects what is happening in the
+	 * algorithm.100 10
+	 */
+	public static void updateView(int t) {
+		s_txtElapsed.setText(t + "");
+
+		for (int i = 0; i < world.length; i++) {
+			for (int j = 0; j < world[i].length; j++) {
+				Location l = world[i][j];
+				l.getVisual().setFill(l.getFoodContents());
+			}
+		}
+	}
+
+	/*
+	 * //--This function gets an integer value from the user. --// private int
+	 * getDimension(String name) { TextInputDialog in = new TextInputDialog();
+	 * in.setTitle(name); in.setHeaderText(name + " of world required.");
+	 * in.setContentText("Enter the " + name + " of the plane:"); Optional<String>
+	 * dim = in.showAndWait();
+	 * 
+	 * if(dim.isPresent()) return Integer.parseInt(dim.get());
+	 * 
+	 * return -1; }
+	 */
 }
