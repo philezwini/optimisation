@@ -11,6 +11,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import physics.Physics;
 import saco.Location;
 import saco.SACOHelper;
 
@@ -30,9 +31,12 @@ public class SimController extends Controller {
 	@Override
 	public void initialize(URL arg0, ResourceBundle arg1) {
 		// Get the user's preferred size of the world.
-		width = 500;
-		height = 500;
-
+		width = 300;
+		height = 300;
+		
+		Physics.initialize(width, height);
+		rootPane.setPrefSize(width, height);
+		
 		s_txtElapsed = txtElapsed;
 		s_txtElapsed.setText("0");
 		initWorld();// Initialize the world.
@@ -88,7 +92,7 @@ public class SimController extends Controller {
 
 	// -- Returns a random value between 0 and 255 both inclusive. --//
 	private Color randColor() {
-		int rand = new Random().nextInt(4);
+		int rand = new Random().nextInt(7);
 		if (rand == 0)
 			return Color.RED;
 		if (rand == 1)
@@ -97,6 +101,16 @@ public class SimController extends Controller {
 			return Color.BLUE;
 		if(rand == 3)
 			return Color.WHITE;
+		if(rand == 4)
+			return Color.WHITE;
+
+		if(rand == 5)
+			return Color.WHITE;
+
+		if(rand == 6)
+			return Color.WHITE;
+
+		
 
 		return null;
 	}
