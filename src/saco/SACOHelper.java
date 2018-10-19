@@ -2,7 +2,6 @@ package saco;
 
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.Scanner;
 import java.util.TimerTask;
 
 import javafx.application.Platform;
@@ -30,7 +29,9 @@ public class SACOHelper extends TimerTask {
 	private static final double ALPHA = 2;
 
 	// Variable that specifies the pheromone evaporation rate.
-	private static final double RHO = 0.2;
+	private static final double RHO = 0.1;
+
+	private static final int INIT_MAX_PH = 5;
 
 	// This is the stopping condition of the algorithm.
 	private double maxTimeElapsed;
@@ -51,31 +52,43 @@ public class SACOHelper extends TimerTask {
 	}
 
 	private void initNests(Location[][] world, int red, int green, int blue) {
+
 		for (int i = 0; i < red; i++) {
-			Ant a = new Ant(Colony.RED, randNest());
+			Location lRed = randNest(Colony.RED);
+			lRed.setNest(true, Colony.RED);
+			Ant a = new Ant(Colony.RED, lRed);
 			ants.add(a);
 		}
 
 		for (int i = 0; i < green; i++) {
-			Ant a = new Ant(Colony.GREEN, randNest());
+			Location lGreen = randNest(Colony.GREEN);
+			lGreen.setNest(true, Colony.GREEN);
+			Ant a = new Ant(Colony.GREEN, lGreen);
 			ants.add(a);
 		}
 
-		// Initialise the blue nest and place ants in it.
-		Location lBlue = world[220][420];
-		lBlue.setNest(true);
 		for (int i = 0; i < blue; i++) {
-			Ant a = new Ant(Colony.BLUE, randNest());
+			Location lBlue = randNest(Colony.BLUE);
+			lBlue.setNest(true, Colony.BLUE);
+			Ant a = new Ant(Colony.BLUE, lBlue);
 			ants.add(a);
 		}
 	}
 
-	private Location randNest() {
+	private Location randNest(Colony colony) {
 		Random r = new Random();
 		int x = r.nextInt(500);
 		int y = r.nextInt(500);
 		Location l = world[x][y];
-		l.setNest(true);
+
+		// Make sure that an ant's nest is always initially an empty space.
+		while (l.getVisual().getFill() != Color.WHITE) {
+			x = r.nextInt(500);
+			y = r.nextInt(500);
+			l = world[x][y];
+		}
+
+		l.setNest(true, colony);
 		return l;
 	}
 
@@ -83,21 +96,17 @@ public class SACOHelper extends TimerTask {
 		Random r = new Random();
 		/*
 		 * Initialize the locations in the world with random pheromones int the range
-		 * [1, ?].
+		 * [1, 5].
 		 */
 		for (int i = 0; i < world.length; i++) {
 			for (int j = 0; j < world[i].length; j++) {
 				// Initialise pheromone value with a small round number.
 				double[] tempPh = new double[3];
-				tempPh[0] = r.nextInt(3) + 1; // Red pheromone level.
-				tempPh[1] = r.nextInt(3) + 1; // Green pheromone level.
-				tempPh[2] = r.nextInt(3) + 1; // Blue pheromone level.
+				tempPh[0] = r.nextInt(INIT_MAX_PH) + 1; // Red pheromone level.
+				tempPh[1] = r.nextInt(INIT_MAX_PH) + 1; // Green pheromone level.
+				tempPh[2] = r.nextInt(INIT_MAX_PH) + 1; // Blue pheromone level.
 
 				world[i][j].setPhLevels(tempPh);
-
-				// -- DEBUG CODE!! --//
-				// System.out.println("F: " + world[i][j].getFoodContents() + ". P: " +
-				// world[i][j].getPheromone());
 			}
 		}
 	}
@@ -112,8 +121,6 @@ public class SACOHelper extends TimerTask {
 				while (!pickFood(a)) {
 					move(a, world); // Select next location based on transition probabilty equation.
 				}
-
-				// System.out.println("picked something");
 			}
 
 			// Pheromone evaporation
@@ -122,7 +129,6 @@ public class SACOHelper extends TimerTask {
 					evaporatePh(world[i][j]);
 				}
 			}
-			// System.out.println("pheromones evaporated.");
 			/*
 			 * Each ant now deposits pheromone to each cell that it visited on its way to
 			 * find food.
@@ -146,7 +152,6 @@ public class SACOHelper extends TimerTask {
 					}
 				}
 			}
-			// System.out.println("Pheromone deposits done.");
 			/*
 			 * All the ants now walk back in their routes and will drop food particles based
 			 * on a probability. This portion is not in SACO. This is experimental.
@@ -154,21 +159,11 @@ public class SACOHelper extends TimerTask {
 			for (Ant a : ants) {
 				while (a.isCarryingFood()) {
 					if (!atNest(a)) {
-						// System.out.println("will not drop");
 						takeStep(a, world);
-						/*
-						 * System.out.println("step back home." + a.getLocation().getX() + ", " +
-						 * a.getLocation().getY() + ". " + a.getColony());
-						 */
 					} else {
-						// System.out.println("will drop");
 						drop(a, world);
 						a.getPath().removeAllElements();
 						a.getRoute().removeAllElements();
-						/*
-						 * System.out.println( "drop" + a.getLocation().getX() + ", " +
-						 * a.getLocation().getY() + ". " + a.getColony());
-						 */
 					}
 				}
 			}
@@ -184,43 +179,143 @@ public class SACOHelper extends TimerTask {
 	}
 
 	private boolean atNest(Ant a) {
-		return a.getLocation().isNest();
+		return a.getLocation().isNest() && (a.getLocation().getResColony() == a.getColony());
 	}
 
 	/*
-	 * NB!! Not the best method of dropping food: we still need to fix this.
+	 * This methods helps the ant drop the food it is carrying.
+	 * An ant can only drop food when in its own nest.
 	 */
 	private void drop(Ant a, Location[][] world) {
 		a.setCarryingFood(false);
-		switch (a.getColony()) {
-		case RED:
-			a.getLocation().setFoodContents(Color.RED);
-			break;
-		case GREEN:
-			a.getLocation().setFoodContents(Color.GREEN);
-			break;
-		case BLUE:
-			a.getLocation().setFoodContents(Color.BLUE);
-			break;
+
+		if ((a.getLocation().getResColony() == a.getColony()) && a.getLocation().getFoodContents() == Color.WHITE) {
+			// This is a new nest.
+			a.getLocation().setFoodContents(toColor(a.getColony()));
+			return;
+		}
+
+		// This is not a new nest. We must expand it.
+		expandNest(a);
+	}
+
+	private void expandNest(Ant a) {
+		int d = 1;
+		boolean emptySpaceFound = false;
+		int x = a.getLocation().getX(), y = a.getLocation().getY();
+
+		while (!emptySpaceFound) {
+			// North West
+			if (isValidLocation(x - d, y - d) && !world[x - d][y - d].isNest()) {
+				world[x - d][y - d].setFoodContents(toColor(a.getColony()));
+				world[x - d][y - d].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+
+			// North.
+			if (isValidLocation(x, y - d) && !world[x][y - d].isNest()) {
+				world[x][y - d].setFoodContents(toColor(a.getColony()));
+				world[x][y - d].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+
+			// North East.
+			if (isValidLocation(x + d, y - d) && !world[x + d][y - d].isNest()) {
+				world[x + d][y - d].setFoodContents(toColor(a.getColony()));
+				world[x + d][y - d].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+
+			// East
+			if (isValidLocation(x + d, y) && !world[x + d][y].isNest()) {
+				world[x + d][y].setFoodContents(toColor(a.getColony()));
+				world[x + d][y].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+
+			// South East.
+			if (isValidLocation(x + d, y + d) && !world[x + d][y + d].isNest()) {
+				world[x + d][y + d].setFoodContents(toColor(a.getColony()));
+				world[x + d][y + d].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+
+			// South.
+			if (isValidLocation(x, y + d) && !world[x][y + d].isNest()) {
+				world[x][y + d].setFoodContents(toColor(a.getColony()));
+				world[x][y + d].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+
+			// South West.
+			if (isValidLocation(x - d, y + d) && !world[x - d][y + d].isNest()) {
+				world[x - d][y + d].setFoodContents(toColor(a.getColony()));
+				world[x - d][y + d].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+
+			// West.
+			if (isValidLocation(x - d, y) && !world[x - d][y].isNest()) {
+				world[x - d][y].setFoodContents(toColor(a.getColony()));
+				world[x - d][y].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+			d++;
 		}
 	}
 
-	private boolean willDrop(Ant a) {
-		double maxDistance = Physics.distance(0, 0, 500, 500);
-		double distance = Physics.distance(a.getLocation().getX(), a.getLocation().getY(), a.getNest().getX(),
-				a.getNest().getY());
+	private Color toColor(Colony colony) {
+		if (colony == Colony.RED)
+			return Color.RED;
 
-		// Calculate the probability that the ant will drop the pellet.
-		double prDrop = (maxDistance - distance) / maxDistance;
-		double p = Math.random(); // Generate a random value in [0, 1];
+		if (colony == Colony.GREEN)
+			return Color.GREEN;
 
-		// If this value is less than the probability, the ant will drop the food
-		// particle.
-		if (p < prDrop)
-			return true;
+		if (colony == Colony.BLUE)
+			return Color.BLUE;
 
-		return false;
+		return null;
 	}
+
+	/*
+	 * private void makeRandomDrop(Ant a) { Random rand = new Random(); int r = 0;
+	 * boolean success = false;
+	 * 
+	 * while (!success) { int x = a.getLocation().getX(); int y =
+	 * a.getLocation().getY(); r = rand.nextInt(4); if (r == 0) { // Up if
+	 * (isValidLocation(x, y - 1)) { world[x][y -
+	 * 1].setFoodContents(a.getLocation().getFoodContents()); success = true; } } if
+	 * (r == 1) { // Down if (isValidLocation(x, y + 1)) { world[x][y +
+	 * 1].setFoodContents(a.getLocation().getFoodContents()); success = true; }
+	 * 
+	 * } if (r == 2) { // Left if (isValidLocation(x - 1, y)) { world[x -
+	 * 1][y].setFoodContents(a.getLocation().getFoodContents()); success = true; } }
+	 * if (r == 3) { if (isValidLocation(x + 1, y)) { world[x +
+	 * 1][y].setFoodContents(a.getLocation().getFoodContents()); success = true; } }
+	 * } }
+	 */
+
+	/*
+	 * private boolean willDrop(Ant a) { double maxDistance = Physics.distance(0, 0,
+	 * 500, 500); double distance = Physics.distance(a.getLocation().getX(),
+	 * a.getLocation().getY(), a.getNest().getX(), a.getNest().getY());
+	 * 
+	 * // Calculate the probability that the ant will drop the pellet. double prDrop
+	 * = (maxDistance - distance) / maxDistance; double p = Math.random(); //
+	 * Generate a random value in [0, 1];
+	 * 
+	 * // If this value is less than the probability, the ant will drop the food //
+	 * particle. if (a.getRoute().isEmpty() || (p < prDrop)) { return true; } return
+	 * false; }
+	 */
 
 	private void takeStep(Ant a, Location[][] world) {
 		Move m = a.getRoute().pop();
@@ -265,10 +360,6 @@ public class SACOHelper extends TimerTask {
 			double p = Math.random();
 			if (p < P_PICK) {
 				pick(a);
-				/*
-				 * System.out.println( "pick" + a.getLocation().getX() + ", " +
-				 * a.getLocation().getY() + ". " + a.getColony());
-				 */
 				return true;
 			}
 		}
@@ -287,23 +378,8 @@ public class SACOHelper extends TimerTask {
 			return false;
 		}
 
-		switch (a.getColony()) {
-		// Ant can only eat food that is good for its colony.
-		case RED:
-			// System.out.println(a.getLocation().getFoodContents().getR() + " (" +
-			// a.getColony() + ")");
-			return a.getLocation().getFoodContents() == Color.RED;
-		case GREEN:
-			// System.out.println(a.getLocation().getFoodContents().getG() + " (" +
-			// a.getColony() + ")");
-			return a.getLocation().getFoodContents() == Color.GREEN;
-		case BLUE:
-			// System.out.println(a.getLocation().getFoodContents().getB() + " (" +
-			// a.getColony() + ")");
-			return a.getLocation().getFoodContents() == Color.BLUE;
-		}
-
-		return false;
+		// Ant can only eat food suitable for its colony.
+		return a.getLocation().getFoodContents() == toColor(a.getColony());
 	}
 
 	private void move(Ant a, Location[][] world) {
@@ -409,8 +485,6 @@ public class SACOHelper extends TimerTask {
 			Location nextLoc = null;
 			switch (maxIndex) {
 			case 0:
-				//System.out.println(tProbs[0]);
-				// System.out.println("Moving up - " + maxProb);
 				// Ant has to move up.
 				nextLoc = world[a.getLocation().getX()][a.getLocation().getY() - 1];
 				if (!visited(a, nextLoc)) {
@@ -421,20 +495,13 @@ public class SACOHelper extends TimerTask {
 					a.getRoute().push(Move.DOWN);
 
 					a.getPath().push(nextLoc);
-					/*System.out.println("Path found up." + a.getLocation().getX() + ", " + a.getLocation().getY() + ". "
-							+ a.getColony());*/
 					a.setLocation(nextLoc);
 					pathFound = true;
 				} else {
-					// System.out.println("been there.");
 					indexToRemove = 0;
 				}
 				break;
 			case 1:
-				//System.out.println(tProbs[1]);
-
-				// System.out.println("Moving down " + maxProb);
-
 				// Ant has to move down.
 				nextLoc = world[a.getLocation().getX()][a.getLocation().getY() + 1];
 				if (!visited(a, nextLoc)) {
@@ -445,21 +512,13 @@ public class SACOHelper extends TimerTask {
 					a.getRoute().push(Move.UP);
 
 					a.getPath().push(nextLoc);
-					/*System.out.println("Path found down." + a.getLocation().getX() + ", " + a.getLocation().getY()
-							+ ". " + a.getColony());*/
 					a.setLocation(nextLoc);
 					pathFound = true;
-
 				} else {
-					// System.out.println("been there.");
 					indexToRemove = 1;
 				}
 				break;
 			case 2:
-				//System.out.println(tProbs[2]);
-
-				// System.out.println("Moving left " + maxProb);
-
 				// Ant has to move left.
 				nextLoc = world[a.getLocation().getX() - 1][a.getLocation().getY()];
 				if (!visited(a, nextLoc)) {
@@ -470,20 +529,13 @@ public class SACOHelper extends TimerTask {
 					a.getRoute().push(Move.RIGHT);
 
 					a.getPath().push(nextLoc);
-					/*System.out.println("Path found left." + a.getLocation().getX() + ", " + a.getLocation().getY()
-							+ ". " + a.getColony());*/
 					a.setLocation(nextLoc);
 					pathFound = true;
 				} else {
-					// System.out.println("been there.");
 					indexToRemove = 2;
 				}
 				break;
 			case 3:
-				//System.out.println(tProbs[3]);
-
-				// System.out.println("Moving right " + maxProb);
-
 				// Ant has to move right.
 				nextLoc = world[a.getLocation().getX() + 1][a.getLocation().getY()];
 				if (!visited(a, nextLoc)) {
@@ -494,12 +546,9 @@ public class SACOHelper extends TimerTask {
 					a.getRoute().push(Move.LEFT);
 
 					a.getPath().push(nextLoc);
-					/*System.out.println("Path found right." + a.getLocation().getX() + ", " + a.getLocation().getY()
-							+ ". " + a.getColony());*/
 					a.setLocation(nextLoc);
 					pathFound = true;
 				} else {
-					// System.out.println("been there.");
 					indexToRemove = 3;
 				}
 				break;
@@ -526,8 +575,6 @@ public class SACOHelper extends TimerTask {
 					 */
 					a.getRoute().push(Move.DOWN);
 					a.getPath().push(nextLoc);
-					/*System.out.println("Random Path found up." + a.getLocation().getX() + ", " + a.getLocation().getY()
-							+ ". " + a.getColony());*/
 					a.setLocation(nextLoc);
 					found = true;
 				}
@@ -536,7 +583,6 @@ public class SACOHelper extends TimerTask {
 			if (p == 1) {
 				// 2nd attempt is down.
 				if (isValidLocation(a.getLocation().getX(), a.getLocation().getY() + 1)) {
-
 					nextLoc = world[a.getLocation().getX()][a.getLocation().getY() + 1];
 					/*
 					 * Update route stack with opposite direction. This will benefit the ant when it
@@ -544,8 +590,6 @@ public class SACOHelper extends TimerTask {
 					 */
 					a.getRoute().push(Move.UP);
 					a.getPath().push(nextLoc);
-					/*System.out.println("Random Path found down." + a.getLocation().getX() + ", "
-							+ a.getLocation().getY() + ". " + a.getColony());*/
 					a.setLocation(nextLoc);
 					found = true;
 				}
@@ -553,7 +597,6 @@ public class SACOHelper extends TimerTask {
 			if (p == 2) {
 				// 3rd attempt is left.
 				if (isValidLocation(a.getLocation().getX() - 1, a.getLocation().getY())) {
-
 					nextLoc = world[a.getLocation().getX() - 1][a.getLocation().getY()];
 					/*
 					 * Update route stack with opposite direction. This will benefit the ant when it
@@ -561,8 +604,6 @@ public class SACOHelper extends TimerTask {
 					 */
 					a.getRoute().push(Move.RIGHT);
 					a.getPath().push(nextLoc);
-					/*System.out.println("Random Path found left." + a.getLocation().getX() + ", "
-							+ a.getLocation().getY() + ". " + a.getColony());*/
 					a.setLocation(nextLoc);
 					found = true;
 				}
@@ -570,7 +611,6 @@ public class SACOHelper extends TimerTask {
 			if (p == 3) {
 				// Last attempt is right.
 				if (isValidLocation(a.getLocation().getX() + 1, a.getLocation().getY())) {
-
 					nextLoc = world[a.getLocation().getX() + 1][a.getLocation().getY()];
 					/*
 					 * Update route stack with opposite direction. This will benefit the ant when it
@@ -578,8 +618,6 @@ public class SACOHelper extends TimerTask {
 					 */
 					a.getRoute().push(Move.LEFT);
 					a.getPath().push(nextLoc);
-					/*System.out.println("RandomPath found right." + a.getLocation().getX() + ", "
-							+ a.getLocation().getY() + ". " + a.getColony());*/
 					a.setLocation(nextLoc);
 					found = true;
 				}
