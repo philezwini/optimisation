@@ -6,6 +6,7 @@ import javafx.scene.shape.Circle;
 public class Location {
 	private double[] phLevels; // Pheromone concentration.
 	private boolean isNest;
+	private Colony resColony;
 	private Color foodContents;
 	private int x; // x-coordinate of the location.
 	private int y; // y-coordinate of the location.
@@ -18,7 +19,7 @@ public class Location {
 		this.y = y;
 
 		phLevels = new double[3];
-		setNest(false);
+		setNest(false, null);
 	}
 
 	public Color getFoodContents() {
@@ -41,8 +42,9 @@ public class Location {
 		return isNest;
 	}
 
-	public void setNest(boolean isNestLoc) {
+	public void setNest(boolean isNestLoc, Colony colony) {
 		this.isNest = isNestLoc;
+		this.resColony = colony;
 	}
 
 	public int getX() {
@@ -79,5 +81,13 @@ public class Location {
 
 	public void addB(double phLevel) {
 		phLevels[2] += phLevel;
+	}
+
+	public Colony getResColony() {
+		return resColony;
+	}
+
+	public void setResColony(Colony resColony) {
+		this.resColony = resColony;
 	}
 }
