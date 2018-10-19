@@ -47,12 +47,13 @@ public class SimController extends Controller {
 
 		saco = new SACOHelper(world, true, t, r, g, b);
 		timer = new Timer();
-		timer.scheduleAtFixedRate(saco, 0, 1);
+		timer.scheduleAtFixedRate(saco, 0, 100);
 	}
 
 	@FXML
 	private void btnSopClick() {
 		saco.cancel();
+		System.out.println("Simulation stopped.");
 	}
 
 	// -- Draws the world on the AnchorPane. --//
