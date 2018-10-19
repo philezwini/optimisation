@@ -18,7 +18,7 @@ public class SACOHelper extends TimerTask {
 	private boolean fixedNests;
 
 	// Probability that the ant will pick up a food particle.
-	private static final double P_PICK = 1;
+	private static final double P_PICK = 0.6;
 
 	private int t = 0; // Elapsed time.
 
@@ -26,12 +26,12 @@ public class SACOHelper extends TimerTask {
 
 	// Variable for determining how much influence the pheromone levels have on the
 	// ant's movement.
-	private static final double ALPHA = 2;
+	private static final double ALPHA = 0.5;
 
 	// Variable that specifies the pheromone evaporation rate.
 	private static final double RHO = 0.1;
 
-	private static final int INIT_MAX_PH = 5;
+	private static final int INIT_MAX_PH = 3;
 
 	// This is the stopping condition of the algorithm.
 	private double maxTimeElapsed;
@@ -77,14 +77,14 @@ public class SACOHelper extends TimerTask {
 
 	private Location randNest(Colony colony) {
 		Random r = new Random();
-		int x = r.nextInt(500);
-		int y = r.nextInt(500);
+		int x = r.nextInt(world.length);
+		int y = r.nextInt(world.length);
 		Location l = world[x][y];
 
 		// Make sure that an ant's nest is always initially an empty space.
 		while (l.getVisual().getFill() != Color.WHITE) {
-			x = r.nextInt(500);
-			y = r.nextInt(500);
+			x = r.nextInt(world.length);
+			y = r.nextInt(world.length);
 			l = world[x][y];
 		}
 
@@ -156,7 +156,7 @@ public class SACOHelper extends TimerTask {
 			 * All the ants now walk back in their routes and will drop food particles based
 			 * on a probability. This portion is not in SACO. This is experimental.
 			 */
-			for (Ant a : ants) {
+			for (Ant a : ants) {				
 				while (a.isCarryingFood()) {
 					if (!atNest(a)) {
 						takeStep(a, world);
@@ -194,7 +194,6 @@ public class SACOHelper extends TimerTask {
 			a.getLocation().setFoodContents(toColor(a.getColony()));
 			return;
 		}
-
 		// This is not a new nest. We must expand it.
 		expandNest(a);
 	}
@@ -203,7 +202,7 @@ public class SACOHelper extends TimerTask {
 		int d = 1;
 		boolean emptySpaceFound = false;
 		int x = a.getLocation().getX(), y = a.getLocation().getY();
-
+		
 		while (!emptySpaceFound) {
 			// North West
 			if (isValidLocation(x - d, y - d) && !world[x - d][y - d].isNest()) {
@@ -284,38 +283,6 @@ public class SACOHelper extends TimerTask {
 
 		return null;
 	}
-
-	/*
-	 * private void makeRandomDrop(Ant a) { Random rand = new Random(); int r = 0;
-	 * boolean success = false;
-	 * 
-	 * while (!success) { int x = a.getLocation().getX(); int y =
-	 * a.getLocation().getY(); r = rand.nextInt(4); if (r == 0) { // Up if
-	 * (isValidLocation(x, y - 1)) { world[x][y -
-	 * 1].setFoodContents(a.getLocation().getFoodContents()); success = true; } } if
-	 * (r == 1) { // Down if (isValidLocation(x, y + 1)) { world[x][y +
-	 * 1].setFoodContents(a.getLocation().getFoodContents()); success = true; }
-	 * 
-	 * } if (r == 2) { // Left if (isValidLocation(x - 1, y)) { world[x -
-	 * 1][y].setFoodContents(a.getLocation().getFoodContents()); success = true; } }
-	 * if (r == 3) { if (isValidLocation(x + 1, y)) { world[x +
-	 * 1][y].setFoodContents(a.getLocation().getFoodContents()); success = true; } }
-	 * } }
-	 */
-
-	/*
-	 * private boolean willDrop(Ant a) { double maxDistance = Physics.distance(0, 0,
-	 * 500, 500); double distance = Physics.distance(a.getLocation().getX(),
-	 * a.getLocation().getY(), a.getNest().getX(), a.getNest().getY());
-	 * 
-	 * // Calculate the probability that the ant will drop the pellet. double prDrop
-	 * = (maxDistance - distance) / maxDistance; double p = Math.random(); //
-	 * Generate a random value in [0, 1];
-	 * 
-	 * // If this value is less than the probability, the ant will drop the food //
-	 * particle. if (a.getRoute().isEmpty() || (p < prDrop)) { return true; } return
-	 * false; }
-	 */
 
 	private void takeStep(Ant a, Location[][] world) {
 		Move m = a.getRoute().pop();
