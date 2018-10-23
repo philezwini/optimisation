@@ -27,7 +27,7 @@ public class SACOHelper extends TimerTask {
 	private static final double ALPHA = 2;
 
 	// Variable that specifies the pheromone evaporation rate.
-	private static final double RHO = 0.1;
+	private static final double RHO = 0.5;
 
 	private static final int INIT_MAX_PH = 3;
 
@@ -256,7 +256,6 @@ public class SACOHelper extends TimerTask {
 		int x = a.getLocation().getX(), y = a.getLocation().getY();
 
 		while (!emptySpaceFound) {
-			System.out.println("no empty space");
 			// North West
 			if (isValidLocation(x - d, y - d) && !world[x - d][y - d].isNest()) {
 				world[x - d][y - d].setFoodContents(toColor(a.getColony()));
