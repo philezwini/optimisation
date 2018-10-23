@@ -29,7 +29,8 @@ public class SACOHelper extends TimerTask {
 	// Variable that specifies the pheromone evaporation rate.
 	private static final double RHO = 0.5;
 
-	private static final int INIT_MAX_PH = 3;
+	//Maximum initial pheromone concentration.
+	private static final int INIT_MAX_TAU = 3;
 
 	// This is the stopping condition of the algorithm.
 	private double maxTimeElapsed;
@@ -121,9 +122,9 @@ public class SACOHelper extends TimerTask {
 			for (int j = 0; j < world[i].length; j++) {
 				// Initialise pheromone value with a small round number.
 				double[] tempPh = new double[3];
-				tempPh[0] = r.nextInt(INIT_MAX_PH) + 1; // Red pheromone level.
-				tempPh[1] = r.nextInt(INIT_MAX_PH) + 1; // Green pheromone level.
-				tempPh[2] = r.nextInt(INIT_MAX_PH) + 1; // Blue pheromone level.
+				tempPh[0] = r.nextInt(INIT_MAX_TAU) + 1; // Red pheromone level.
+				tempPh[1] = r.nextInt(INIT_MAX_TAU) + 1; // Green pheromone level.
+				tempPh[2] = r.nextInt(INIT_MAX_TAU) + 1; // Blue pheromone level.
 
 				world[i][j].setPhLevels(tempPh);
 			}
