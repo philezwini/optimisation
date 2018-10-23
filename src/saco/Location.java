@@ -18,7 +18,7 @@ public class Location {
 		this.x = x;
 		this.y = y;
 
-		phLevels = new double[3];
+		phLevels = null;
 		setNest(false, null);
 	}
 
@@ -71,16 +71,16 @@ public class Location {
 		this.visual = visual;
 	}
 
-	public void addR(double phLevel) {
-		phLevels[0] += phLevel;
+	public void setR(double phLevel) {
+		phLevels[0] = phLevel;
 	}
 
-	public void addG(double phLevel) {
-		phLevels[1] += phLevel;
+	public void setG(double phLevel) {
+		phLevels[1] = phLevel;
 	}
 
-	public void addB(double phLevel) {
-		phLevels[2] += phLevel;
+	public void setB(double phLevel) {
+		phLevels[2] = phLevel;
 	}
 
 	public Colony getResColony() {

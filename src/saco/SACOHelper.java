@@ -10,23 +10,21 @@ import physics.Physics;
 import ui.SimController;
 
 public class SACOHelper extends TimerTask {
-	/*
-	 * Specifies whether or not the ants drop food pellets anywhere in the world
-	 * using a probability, or they have to walk all the way back to their nests in
-	 * order to drop food pellets.
-	 */
-	private boolean fixedNests;
-
 	// Probability that the ant will pick up a food particle.
-	private static final double P_PICK = 0.6;
+	private static final double P_PICK = 1;
+
+	// private static final double P_DROP = 0.98;
 
 	private int t = 0; // Elapsed time.
 
 	private ArrayList<Ant> ants;
+	private int numRedAnts;
+	private int numGreenAnts;
+	private int numBlueAnts;
 
 	// Variable for determining how much influence the pheromone levels have on the
 	// ant's movement.
-	private static final double ALPHA = 0.5;
+	private static final double ALPHA = 2;
 
 	// Variable that specifies the pheromone evaporation rate.
 	private static final double RHO = 0.1;
@@ -38,13 +36,16 @@ public class SACOHelper extends TimerTask {
 
 	private Location[][] world;
 
-	public SACOHelper(Location[][] world, boolean fixedNests, int t, int red, int green, int blue) {
+	public SACOHelper(Location[][] world, boolean fixedNests, int maxTimeElapsed, int red, int green, int blue) {
 		super();
-		this.fixedNests = fixedNests;
-		this.t = 0;
 		this.world = world;
 
-		maxTimeElapsed = t;
+		t = 0;
+		numRedAnts = 0;
+		numGreenAnts = 0;
+		numBlueAnts = 0;
+
+		this.maxTimeElapsed = maxTimeElapsed;
 		ants = new ArrayList<>();
 
 		initRandomPheromones(world);
@@ -55,23 +56,23 @@ public class SACOHelper extends TimerTask {
 
 		for (int i = 0; i < red; i++) {
 			Location lRed = randNest(Colony.RED);
-			lRed.setNest(true, Colony.RED);
 			Ant a = new Ant(Colony.RED, lRed);
 			ants.add(a);
+			numRedAnts++;
 		}
 
 		for (int i = 0; i < green; i++) {
 			Location lGreen = randNest(Colony.GREEN);
-			lGreen.setNest(true, Colony.GREEN);
 			Ant a = new Ant(Colony.GREEN, lGreen);
 			ants.add(a);
+			numGreenAnts++;
 		}
 
 		for (int i = 0; i < blue; i++) {
 			Location lBlue = randNest(Colony.BLUE);
-			lBlue.setNest(true, Colony.BLUE);
 			Ant a = new Ant(Colony.BLUE, lBlue);
 			ants.add(a);
+			numBlueAnts++;
 		}
 	}
 
@@ -82,21 +83,39 @@ public class SACOHelper extends TimerTask {
 		Location l = world[x][y];
 
 		// Make sure that an ant's nest is always initially an empty space.
-		while (l.getVisual().getFill() != Color.WHITE) {
+		while (!isValidNest(l, colony)) {
 			x = r.nextInt(world.length);
 			y = r.nextInt(world.length);
 			l = world[x][y];
 		}
 
+		// Make this location a nest for the given colony.
 		l.setNest(true, colony);
 		return l;
+	}
+
+	/*
+	 * This function is used to ensure that (1) the nest being chosen for the ant
+	 * contains food relevant to the ant and (2) it is not already a nest.
+	 */
+	private boolean isValidNest(Location l, Colony c) {
+
+		// The location contains food relevant the ant
+		if (l.getFoodContents() != toColor(c))
+			return false;
+
+		// This is already a nest for another ant.
+		if (l.isNest())
+			return false;
+
+		return true;
 	}
 
 	private void initRandomPheromones(Location[][] world) {
 		Random r = new Random();
 		/*
-		 * Initialize the locations in the world with random pheromones int the range
-		 * [1, 5].
+		 * Initialize the locations in the world with random pheromones in the range [1,
+		 * INIT_MAX_PH].
 		 */
 		for (int i = 0; i < world.length; i++) {
 			for (int j = 0; j < world[i].length; j++) {
@@ -116,7 +135,8 @@ public class SACOHelper extends TimerTask {
 		if (t < maxTimeElapsed) {
 			for (Ant a : ants) {
 				/*
-				 * While ant has not reached a location that contains food (destination node)...
+				 * While ant has not reached a location that contains food relevant for its
+				 * colong (a.k.a. destination node)...
 				 */
 				while (!pickFood(a)) {
 					move(a, world); // Select next location based on transition probabilty equation.
@@ -129,50 +149,77 @@ public class SACOHelper extends TimerTask {
 					evaporatePh(world[i][j]);
 				}
 			}
+
 			/*
-			 * Each ant now deposits pheromone to each cell that it visited on its way to
-			 * find food.
+			 * Pheromone deposits. The pheromone deposits are inversely proportional to the
+			 * length of the paths that the ants travelled to get food. The longer the path,
+			 * the lower the pheromone deposit for each location along that path. Function:
+			 * ph = numAntsInColony / tripLength;
 			 */
 			for (Ant a : ants) {
 				int tripLength = a.getPath().size();
 				while (!a.getPath().isEmpty()) {
-
 					Location l = a.getPath().pop();
-					double phFromAnt = 2 / tripLength;
-					switch (a.getColony()) {
-					case RED:
-						l.addR(l.getPhLevels()[0] + phFromAnt);
-						break;
-					case GREEN:
-						l.addG(l.getPhLevels()[1] + phFromAnt);
-						break;
-					case BLUE:
-						l.addB(l.getPhLevels()[2] + phFromAnt);
-						break;
+					double phFromAnt = 0;
+
+					if (a.getColony() == Colony.RED) {
+						phFromAnt = numRedAnts / tripLength;
+						l.setR(l.getPhLevels()[0] + phFromAnt);
+					}
+
+					if (a.getColony() == Colony.GREEN) {
+						phFromAnt = numGreenAnts / tripLength;
+						l.setG(l.getPhLevels()[1] + phFromAnt);
+					}
+
+					if (a.getColony() == Colony.BLUE) {
+						phFromAnt = numBlueAnts / tripLength;
+						l.setB(l.getPhLevels()[2] + phFromAnt);
 					}
 				}
 			}
+
 			/*
-			 * All the ants now walk back in their routes and will drop food particles based
-			 * on a probability. This portion is not in SACO. This is experimental.
+			 * In this loop, the ants walk back to their nests using the route stack. The
+			 * ant drops a food particle around its current nest, making that new location a
+			 * nest as well. This is done so that nests grow close to each other. NB: A
+			 * "nest" is not a cluster. It is simply a location. Therefore, a cluster is a
+			 * collection of "nests".
 			 */
-			for (Ant a : ants) {				
+			for (Ant a : ants) {
 				while (a.isCarryingFood()) {
+					/*
+					 * double d = Physics.distance(a.getLocation().getX(), a.getLocation().getY(),
+					 * a.getNest().getX(), a.getNest().getY()); double maxD =
+					 * Physics.distance(Physics.MIN_X, Physics.MIN_Y, Physics.MAX_X, Physics.MAX_Y);
+					 * 
+					 * double p = (maxD - d) / maxD;
+					 * 
+					 * if (p < P_DROP) { drop(a, world); a.getPath().removeAllElements();
+					 * a.getRoute().removeAllElements(); }
+					 */
+
 					if (!atNest(a)) {
 						takeStep(a, world);
 					} else {
 						drop(a, world);
+
+						// Empty the path and route stacks.
 						a.getPath().removeAllElements();
 						a.getRoute().removeAllElements();
 					}
+
 				}
 			}
 
 			t++; // Go to the next iteration.
+
+			// Update the scene.
 			Platform.runLater(() -> {
 				SimController.updateView(t);
 			});
 		} else {
+			// Stopping conditions have been met.
 			cancel();
 			System.out.println("Done.");
 		}
@@ -183,8 +230,8 @@ public class SACOHelper extends TimerTask {
 	}
 
 	/*
-	 * This methods helps the ant drop the food it is carrying.
-	 * An ant can only drop food when in its own nest.
+	 * This methods helps the ant drop the food it is carrying. An ant can only drop
+	 * food when in its own nest.
 	 */
 	private void drop(Ant a, Location[][] world) {
 		a.setCarryingFood(false);
@@ -194,16 +241,22 @@ public class SACOHelper extends TimerTask {
 			a.getLocation().setFoodContents(toColor(a.getColony()));
 			return;
 		}
-		// This is not a new nest. We must expand it.
+
+		// This is not a new nest. It must be expanded.
 		expandNest(a);
 	}
 
+	/*
+	 * This function searches for an empty space around an existing nest to drop
+	 * food particles.
+	 */
 	private void expandNest(Ant a) {
 		int d = 1;
 		boolean emptySpaceFound = false;
 		int x = a.getLocation().getX(), y = a.getLocation().getY();
-		
+
 		while (!emptySpaceFound) {
+			System.out.println("no empty space");
 			// North West
 			if (isValidLocation(x - d, y - d) && !world[x - d][y - d].isNest()) {
 				world[x - d][y - d].setFoodContents(toColor(a.getColony()));
@@ -281,6 +334,11 @@ public class SACOHelper extends TimerTask {
 		if (colony == Colony.BLUE)
 			return Color.BLUE;
 
+		try {
+			throw new Exception("Unrecognised Colony!");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		return null;
 	}
 
@@ -316,14 +374,15 @@ public class SACOHelper extends TimerTask {
 		double newG = (1 - RHO) * l.getPhLevels()[1];
 		double newB = (1 - RHO) * l.getPhLevels()[2];
 
-		l.addR(newR);
-		l.addR(newG);
-		l.addR(newB);
+		// Update location with the new pheromone values.
+		l.setR(newR);
+		l.setG(newG);
+		l.setB(newB);
 	}
 
 	private boolean pickFood(Ant a) {
 		if (canEat(a)) {
-			// Ant picks up pellet based on a probability.
+			// Ant picks up food particle based on a probability.
 			double p = Math.random();
 			if (p < P_PICK) {
 				pick(a);
@@ -340,13 +399,23 @@ public class SACOHelper extends TimerTask {
 	}
 
 	private boolean canEat(Ant a) {
-		if (a.getPath().isEmpty() || a.getLocation().isNest()) {
-			// Ant is still in its nest. It cannot eat. It has to move out.
+		if (a.getPath().isEmpty()) {
+			// Ant has to move atleast one step before it can eat. This encourages
+			// exploration of the search space.
 			return false;
 		}
 
-		// Ant can only eat food suitable for its colony.
-		return a.getLocation().getFoodContents() == toColor(a.getColony());
+		if (a.getLocation().isNest()) {
+			// Ant cannot eat from a nest.
+			return false;
+		}
+
+		if (a.getLocation().getFoodContents() != toColor(a.getColony())) {
+			// Ant can only eat food suitable for its colony.
+			return false;
+		}
+
+		return true;
 	}
 
 	private void move(Ant a, Location[][] world) {
@@ -384,9 +453,6 @@ public class SACOHelper extends TimerTask {
 				tProbs[1] = pTransition;
 			}
 		} else {
-			/*
-			 * This is an invalid position, so the probabilty of visiting it is 0.
-			 */
 			tProbs[1] = -3;
 		}
 
@@ -402,9 +468,6 @@ public class SACOHelper extends TimerTask {
 				tProbs[2] = pTransition;
 			}
 		} else {
-			/*
-			 * This is an invalid position, so the probabilty of visiting it is 0.
-			 */
 			tProbs[2] = -3;
 		}
 
@@ -420,9 +483,6 @@ public class SACOHelper extends TimerTask {
 				tProbs[3] = pTransition;
 			}
 		} else {
-			/*
-			 * This is an invalid position, so the probabilty of visiting it is 0.
-			 */
 			tProbs[3] = -3;
 		}
 
@@ -454,13 +514,13 @@ public class SACOHelper extends TimerTask {
 			case 0:
 				// Ant has to move up.
 				nextLoc = world[a.getLocation().getX()][a.getLocation().getY() - 1];
+				// Make sure that this location is not already in the stack to avoid loops.
 				if (!visited(a, nextLoc)) {
 					/*
-					 * Update route stack with opposite direction. This will benefit the ant when it
-					 * is returning to its nest.
+					 * Update the route stack with opposite direction. The ant will use this stack
+					 * when it returns to its nest.
 					 */
 					a.getRoute().push(Move.DOWN);
-
 					a.getPath().push(nextLoc);
 					a.setLocation(nextLoc);
 					pathFound = true;
@@ -472,12 +532,7 @@ public class SACOHelper extends TimerTask {
 				// Ant has to move down.
 				nextLoc = world[a.getLocation().getX()][a.getLocation().getY() + 1];
 				if (!visited(a, nextLoc)) {
-					/*
-					 * Update route stack with opposite direction. This will benefit the ant when it
-					 * is returning to its nest.
-					 */
 					a.getRoute().push(Move.UP);
-
 					a.getPath().push(nextLoc);
 					a.setLocation(nextLoc);
 					pathFound = true;
@@ -489,12 +544,7 @@ public class SACOHelper extends TimerTask {
 				// Ant has to move left.
 				nextLoc = world[a.getLocation().getX() - 1][a.getLocation().getY()];
 				if (!visited(a, nextLoc)) {
-					/*
-					 * Update route stack with opposite direction. This will benefit the ant when it
-					 * is returning to its nest.
-					 */
 					a.getRoute().push(Move.RIGHT);
-
 					a.getPath().push(nextLoc);
 					a.setLocation(nextLoc);
 					pathFound = true;
@@ -506,12 +556,7 @@ public class SACOHelper extends TimerTask {
 				// Ant has to move right.
 				nextLoc = world[a.getLocation().getX() + 1][a.getLocation().getY()];
 				if (!visited(a, nextLoc)) {
-					/*
-					 * Update route stack with opposite direction. This will benefit the ant when it
-					 * is returning to its nest.
-					 */
 					a.getRoute().push(Move.LEFT);
-
 					a.getPath().push(nextLoc);
 					a.setLocation(nextLoc);
 					pathFound = true;
@@ -520,6 +565,8 @@ public class SACOHelper extends TimerTask {
 				}
 				break;
 			default:
+				// maxIndex is -1. The ant has exhausted all its options. It has to make a
+				// random move.
 				makeRandomMove(a, tProbs);
 				pathFound = true;
 				break;
@@ -528,18 +575,15 @@ public class SACOHelper extends TimerTask {
 	}
 
 	private void makeRandomMove(Ant a, double[] tProbs) {
-		boolean found = false;
+		boolean found = false; // Keeps track of whether a random location has been found.
 		Location nextLoc = null;
+
 		while (!found) {
 			int p = new Random().nextInt(4);
 			if (p == 0) {
 				// Start by trying to move up.
 				if (isValidLocation(a.getLocation().getX(), a.getLocation().getY() - 1)) {
 					nextLoc = world[a.getLocation().getX()][a.getLocation().getY() - 1];
-					/*
-					 * Update route stack with opposite direction. This will benefit the ant when it
-					 * is returning to its nest.
-					 */
 					a.getRoute().push(Move.DOWN);
 					a.getPath().push(nextLoc);
 					a.setLocation(nextLoc);
@@ -551,10 +595,6 @@ public class SACOHelper extends TimerTask {
 				// 2nd attempt is down.
 				if (isValidLocation(a.getLocation().getX(), a.getLocation().getY() + 1)) {
 					nextLoc = world[a.getLocation().getX()][a.getLocation().getY() + 1];
-					/*
-					 * Update route stack with opposite direction. This will benefit the ant when it
-					 * is returning to its nest.
-					 */
 					a.getRoute().push(Move.UP);
 					a.getPath().push(nextLoc);
 					a.setLocation(nextLoc);
@@ -565,10 +605,6 @@ public class SACOHelper extends TimerTask {
 				// 3rd attempt is left.
 				if (isValidLocation(a.getLocation().getX() - 1, a.getLocation().getY())) {
 					nextLoc = world[a.getLocation().getX() - 1][a.getLocation().getY()];
-					/*
-					 * Update route stack with opposite direction. This will benefit the ant when it
-					 * is returning to its nest.
-					 */
 					a.getRoute().push(Move.RIGHT);
 					a.getPath().push(nextLoc);
 					a.setLocation(nextLoc);
@@ -579,10 +615,6 @@ public class SACOHelper extends TimerTask {
 				// Last attempt is right.
 				if (isValidLocation(a.getLocation().getX() + 1, a.getLocation().getY())) {
 					nextLoc = world[a.getLocation().getX() + 1][a.getLocation().getY()];
-					/*
-					 * Update route stack with opposite direction. This will benefit the ant when it
-					 * is returning to its nest.
-					 */
 					a.getRoute().push(Move.LEFT);
 					a.getPath().push(nextLoc);
 					a.setLocation(nextLoc);
@@ -679,13 +711,5 @@ public class SACOHelper extends TimerTask {
 
 	private boolean isValidLocation(int x, int y) {
 		return (x >= Physics.MIN_X && x < Physics.MAX_X) && (y >= Physics.MIN_Y && y < Physics.MAX_Y);
-	}
-
-	public boolean isFixedNests() {
-		return fixedNests;
-	}
-
-	public void setFixedNests(boolean fixedNests) {
-		this.fixedNests = fixedNests;
 	}
 }

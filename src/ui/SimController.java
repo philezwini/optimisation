@@ -94,23 +94,19 @@ public class SimController extends Controller {
 	private Color randColor() {
 		int rand = new Random().nextInt(7);
 		if (rand == 0)
-			return Color.RED;
+			return Color.GREEN;
 		if (rand == 1)
 			return Color.GREEN;
 		if (rand == 2)
 			return Color.BLUE;
 		if(rand == 3)
-			return Color.WHITE;
+			return Color.BLUE;
 		if(rand == 4)
 			return Color.WHITE;
-
 		if(rand == 5)
 			return Color.WHITE;
-
 		if(rand == 6)
 			return Color.WHITE;
-
-		
 
 		return null;
 	}

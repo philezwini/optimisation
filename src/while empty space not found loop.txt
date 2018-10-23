@@ -1,0 +1,74 @@
+while (!emptySpaceFound) {
+			// North West
+			if (isValidLocation(x - d, y - d) && !world[x - d][y - d].isNest()
+					&& world[x - d][y - d].getFoodContents() == Color.WHITE) {
+				world[x - d][y - d].setFoodContents(toColor(a.getColony()));
+				world[x - d][y - d].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+
+			// North.
+			if (isValidLocation(x, y - d) && !world[x][y - d].isNest()
+					&& world[x][y - d].getFoodContents() == Color.WHITE) {
+				world[x][y - d].setFoodContents(toColor(a.getColony()));
+				world[x][y - d].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+
+			// North East.
+			if (isValidLocation(x + d, y - d) && !world[x + d][y - d].isNest()
+					&& world[x + d][y - d].getFoodContents() == Color.WHITE) {
+				world[x + d][y - d].setFoodContents(toColor(a.getColony()));
+				world[x + d][y - d].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+
+			// East
+			if (isValidLocation(x + d, y) && !world[x + d][y].isNest()
+					&& world[x + d][y].getFoodContents() == Color.WHITE) {
+				world[x + d][y].setFoodContents(toColor(a.getColony()));
+				world[x + d][y].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+
+			// South East.
+			if (isValidLocation(x + d, y + d) && !world[x + d][y + d].isNest()
+					&& world[x + d][y + d].getFoodContents() == Color.WHITE) {
+				world[x + d][y + d].setFoodContents(toColor(a.getColony()));
+				world[x + d][y + d].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+
+			// South.
+			if (isValidLocation(x, y + d) && !world[x][y + d].isNest()
+					&& world[x][y + d].getFoodContents() == Color.WHITE) {
+				world[x][y + d].setFoodContents(toColor(a.getColony()));
+				world[x][y + d].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+
+			// South West.
+			if (isValidLocation(x - d, y + d) && !world[x - d][y + d].isNest()
+					&& world[x - d][y + d].getFoodContents() == Color.WHITE) {
+				world[x - d][y + d].setFoodContents(toColor(a.getColony()));
+				world[x - d][y + d].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+
+			// West.
+			if (isValidLocation(x - d, y) && !world[x - d][y].isNest()
+					&& world[x - d][y].getFoodContents() == Color.WHITE) {
+				world[x - d][y].setFoodContents(toColor(a.getColony()));
+				world[x - d][y].setNest(true, a.getColony());
+				emptySpaceFound = true;
+				continue;
+			}
+			d++;
+		}
