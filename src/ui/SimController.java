@@ -94,13 +94,13 @@ public class SimController extends Controller {
 	private Color randColor() {
 		int rand = new Random().nextInt(7);
 		if (rand == 0)
-			return Color.GREEN;
+			return Color.RED;
 		if (rand == 1)
 			return Color.GREEN;
 		if (rand == 2)
 			return Color.BLUE;
 		if(rand == 3)
-			return Color.BLUE;
+			return Color.WHITE;
 		if(rand == 4)
 			return Color.WHITE;
 		if(rand == 5)
@@ -130,16 +130,4 @@ public class SimController extends Controller {
 			}
 		}
 	}
-
-	/*
-	 * //--This function gets an integer value from the user. --// private int
-	 * getDimension(String name) { TextInputDialog in = new TextInputDialog();
-	 * in.setTitle(name); in.setHeaderText(name + " of world required.");
-	 * in.setContentText("Enter the " + name + " of the plane:"); Optional<String>
-	 * dim = in.showAndWait();
-	 * 
-	 * if(dim.isPresent()) return Integer.parseInt(dim.get());
-	 * 
-	 * return -1; }
-	 */
 }

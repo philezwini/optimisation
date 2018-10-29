@@ -205,7 +205,11 @@ public class SACOHelper extends TimerTask {
 					} else {
 						drop(a, world);
 
-						// Empty the path and route stacks.
+						/*
+						 * The path and route stacks should already be empty at this point.
+						 * However, the following lines ensure that they are really emptied out
+						 * before the next iteration begins.
+						 */
 						a.getPath().removeAllElements();
 						a.getRoute().removeAllElements();
 					}
